@@ -1,0 +1,26 @@
+[gd_scene load_steps=3 format=3 uid="uid://bki8moipgju2f"]
+
+[ext_resource type="Script" uid="uid://cqu7414guk52r" path="res://press_play.gd" id="1_80nbo"]
+[ext_resource type="Script" uid="uid://bywwi6dch5qr4" path="res://background.gd" id="2_e2o6t"]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="ColorRect" type="ColorRect" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Background" type="Node2D" parent="." node_paths=PackedStringArray("press_play_node")]
+script = ExtResource("2_e2o6t")
+press_play_node = NodePath("../PlayButton")
+
+[node name="PlayButton" type="Node2D" parent="."]
+script = ExtResource("1_80nbo")
+
+[node name="CPUParticles2D" type="CPUParticles2D" parent="PlayButton"]
