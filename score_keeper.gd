@@ -12,6 +12,7 @@ var active_labels = [] # Track active floating labels
 var score_display: Label = null # UI label for total score
 var timer_display: Label = null # UI label for elapsed time
 var elapsed_time: float = 0.0 # Time since game started
+var multiplier: float = 1.0 # Score multiplier (powerups add/subtract from this)
 
 func _ready():
 	setup_score_display()
@@ -47,9 +48,12 @@ func setup_score_display():
 
 func add_score(amount: int, world_position: Vector2, angle_from_center: float, button_radius: float):
 	"""Add points and spawn a floating number at the given position"""
-	score += amount
+	# Apply multiplier
+	var actual_amount = int(amount * multiplier)
+	
+	score += actual_amount
 	update_score_display()
-	spawn_floating_number(amount, world_position, angle_from_center, button_radius)
+	spawn_floating_number(actual_amount, world_position, angle_from_center, button_radius)
 
 func update_score_display():
 	"""Update the score display label"""
@@ -98,9 +102,11 @@ func spawn_floating_number(amount: int, world_position: Vector2, angle_from_cent
 		if is_instance_valid(old_label):
 			old_label.queue_free()
 	
-	# Calculate font sizes based on score amount
+	# Calculate font sizes based on absolute value of score amount
 	# Use logarithmic scaling so it doesn't get too crazy
-	var size_multiplier = 1.0 + log(float(amount) + 1) * font_scale_factor
+	# This ensures -200 is same size as +200
+	var abs_amount = abs(amount)
+	var size_multiplier = 1.0 + log(float(abs_amount) + 1) * font_scale_factor
 	var initial_font_size = int(base_initial_font_size * size_multiplier)
 	var final_font_size = int(base_final_font_size * size_multiplier)
 	
@@ -110,11 +116,15 @@ func spawn_floating_number(amount: int, world_position: Vector2, angle_from_cent
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	
-	# Style the label
+	# Style the label - use red for negative scores, yellow for positive
 	label.add_theme_font_size_override("font_size", initial_font_size)
-	label.add_theme_color_override("font_color", Color.YELLOW)
+	label.add_theme_color_override("font_color", Color.WHITE) # Base color is white, we'll tint with modulate
 	label.add_theme_color_override("font_outline_color", Color.BLACK)
 	label.add_theme_constant_override("outline_size", 4)
+	
+	# Set initial modulate color based on score
+	var initial_color = Color.RED if amount < 0 else Color.YELLOW
+	label.modulate = initial_color
 	
 	# Position at the circumference edge
 	var direction = Vector2(cos(angle_from_center), sin(angle_from_center))
@@ -126,9 +136,9 @@ func spawn_floating_number(amount: int, world_position: Vector2, angle_from_cent
 	active_labels.append(label)
 	
 	# Animate the label with scaled font sizes
-	animate_floating_number(label, direction, spawn_pos, initial_font_size, final_font_size)
+	animate_floating_number(label, direction, spawn_pos, initial_font_size, final_font_size, amount)
 
-func animate_floating_number(label: Label, direction: Vector2, start_pos: Vector2, initial_font_size: int, final_font_size: int):
+func animate_floating_number(label: Label, direction: Vector2, start_pos: Vector2, _initial_font_size: int, _final_font_size: int, amount: int):
 	"""Animate the floating number to move, grow, and fade using Tween for better performance"""
 	# Create a tween for smooth animations
 	var tween = create_tween()
@@ -138,18 +148,15 @@ func animate_floating_number(label: Label, direction: Vector2, start_pos: Vector
 	var end_pos = start_pos + direction * float_distance
 	tween.tween_property(label, "global_position", end_pos, float_duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	
-	# Animate modulate for fade (much faster than color override)
-	# Start fully opaque, fade at 60% mark
-	tween.tween_property(label, "modulate:a", 1.0, float_duration * 0.6)
-	tween.tween_property(label, "modulate:a", 0.0, float_duration * 0.4).set_delay(float_duration * 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	# Animate color shift for positive scores only
+	# Negative scores stay red and just fade away
+	if amount >= 0:
+		# Yellow to orange for positive scores (starts at 30% mark)
+		tween.tween_property(label, "modulate", Color.ORANGE, float_duration * 0.7).set_delay(float_duration * 0.3)
 	
-	# Animate color shift from yellow to orange (starts at 30% mark)
-	tween.tween_method(func(color: Color):
-		label.add_theme_color_override("font_color", color),
-		Color.YELLOW,
-		Color.ORANGE,
-		float_duration * 0.7
-	).set_delay(float_duration * 0.3)
+	# Animate alpha for fade out (fade starts at 60% mark)
+	# We need to fade the alpha separately after the color animation
+	tween.tween_property(label, "modulate:a", 0.0, float_duration * 0.4).set_delay(float_duration * 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 	# Cleanup after animation completes
 	await tween.finished

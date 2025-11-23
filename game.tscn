@@ -1,8 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://bki8moipgju2f"]
+[gd_scene load_steps=6 format=3 uid="uid://bki8moipgju2f"]
 
 [ext_resource type="Script" uid="uid://cqu7414guk52r" path="res://press_play.gd" id="1_80nbo"]
 [ext_resource type="Script" uid="uid://bywwi6dch5qr4" path="res://background.gd" id="2_e2o6t"]
 [ext_resource type="Script" uid="uid://dtbbnxneqtkgn" path="res://score_keeper.gd" id="3_feb5d"]
+[ext_resource type="Script" uid="uid://bo3pjc4ce8t4p" path="res://odds.gd" id="5_7jktm"]
+[ext_resource type="Script" uid="uid://db1jhsn4cwals" path="res://edgy.gd" id="5_edgy"]
 
 [node name="Node2D" type="Node2D"]
 
@@ -23,9 +25,18 @@ script = ExtResource("2_e2o6t")
 press_play_node = NodePath("../PlayButton")
 
 [node name="PlayButton" type="Node2D" parent="."]
+unique_name_in_owner = true
 script = ExtResource("1_80nbo")
 
 [node name="CPUParticles2D" type="CPUParticles2D" parent="PlayButton"]
 
 [node name="ScoreKeeper" type="Node2D" parent="."]
 script = ExtResource("3_feb5d")
+
+[node name="Powerups" type="Node2D" parent="."]
+
+[node name="Edgy" type="Node2D" parent="Powerups"]
+script = ExtResource("5_edgy")
+
+[node name="Odds" type="Node2D" parent="Powerups"]
+script = ExtResource("5_7jktm")
